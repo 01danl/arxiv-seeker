@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arxiv-seeker"
+version = "0.1.0"
+description = "AI-powered research assistant for discovering, ranking, and chatting with arXiv papers"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "ArxivSeeker contributors" }]
+keywords = ["arxiv", "rag", "llm", "research", "semantic-search"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "arxiv>=2.1.0",
+    "requests>=2.31",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "click>=8.1",
+    "sentence-transformers>=2.6",
+    "faiss-cpu>=1.8",
+    "pymupdf>=1.24",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+rag = ["ollama", "openai>=1.30", "anthropic>=0.25"]
+web = ["streamlit>=1.35"]
+api = ["fastapi>=0.110", "uvicorn>=0.29"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "black>=24.0",
+    "isort>=5.13",
+    "flake8>=7.0",
+    "mypy>=1.9",
+]
+
+[project.scripts]
+arxiv-seeker = "arxiv_seeker.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["arxiv_seeker*"]
+
+[tool.black]
+line-length = 110
+
+[tool.isort]
+profile = "black"
