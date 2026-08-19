@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     # --- Optional integrations ---
     semantic_scholar_api_key: Optional[str] = None
 
+    # --- Agent search settings ---
+    agent_candidates_per_query: int = 8      # сколько статей брать с каждого запроса
+    agent_final_top_n: int = 6               # сколько оставить после фильтрации
+
 
 @lru_cache
 def get_settings() -> Settings:

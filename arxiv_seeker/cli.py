@@ -77,6 +77,33 @@ def chat(paper_id, question, top_k):
     for src in result.sources:
         click.echo(f"  - [{src.heading}] (score={src.score:.3f}) {src.text[:120]}...")
 
+@cli.command()
+@click.argument("message", nargs=-1, required=True)
+def ask(message):
+    """Агентный поиск статей на естественном языке."""
+    from arxiv_seeker.agent.orchestrator import AgentSearchOrchestrator
+    from arxiv_seeker.config import get_settings
+
+    settings = get_settings()
+    orchestrator = AgentSearchOrchestrator(
+        config_overrides={
+            "candidates_per_query": settings.agent_candidates_per_query,
+            "final_top_n": settings.agent_final_top_n,
+        }
+    )
+    user_msg = " ".join(message)
+    result = orchestrator.run(user_msg)
+
+    click.echo(result.reply_text)
+    if not result.papers:
+        return
+
+    for i, paper in enumerate(result.papers, 1):
+        click.echo(f"\n{i}. {paper.title}")
+        click.echo(f"   {paper.pdf_url}")
+        reason = result.reasons.get(paper.arxiv_id, "")
+        if reason:
+            click.echo(f"   Почему: {reason}")
 
 if __name__ == "__main__":
     cli()

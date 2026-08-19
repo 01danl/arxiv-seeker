@@ -12,6 +12,7 @@ from arxiv_seeker.rag.chunker import chunk_paper
 from arxiv_seeker.rag.embedding import Embedder
 from arxiv_seeker.rag.pdf_parser import parse_pdf
 from arxiv_seeker.rag.vector_store import VectorStore
+from arxiv_seeker.llm import LLMClient
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class RagChat:
     """Retrieval + LLM call for a single paper's Q&A session."""
 
     def __init__(self, arxiv_id: str, embedder: Optional[Embedder] = None):
+        self.llm = LLMClient()
         self.arxiv_id = arxiv_id
         self.settings = get_settings()
         self.embedder = embedder or Embedder()
@@ -108,16 +110,8 @@ class RagChat:
         return ChatAnswer(answer=answer_text, sources=chunks)
 
     # --- LLM backends -----------------------------------------------------
-
     def _call_llm(self, user_prompt: str) -> str:
-        provider = self.settings.llm_provider
-        if provider == "ollama":
-            return self._call_ollama(user_prompt)
-        if provider == "openai":
-            return self._call_openai(user_prompt)
-        if provider == "anthropic":
-            return self._call_anthropic(user_prompt)
-        raise ValueError(f"Unknown LLM provider: {provider}")
+        return self.llm.chat(_SYSTEM_PROMPT, user_prompt)
 
     def _call_ollama(self, user_prompt: str) -> str:
         import requests
