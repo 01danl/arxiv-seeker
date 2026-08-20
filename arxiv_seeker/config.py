@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     agent_candidates_per_query: int = 8      # сколько статей брать с каждого запроса
     agent_final_top_n: int = 6               # сколько оставить после фильтрации
 
+    tavily_api_key: Optional[str] = None
+    search_backend: Literal["arxiv", "tavily"] = "tavily"  # какой discovery-движок использовать
+
 
 @lru_cache
 def get_settings() -> Settings:

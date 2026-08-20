@@ -86,3 +86,29 @@ class SearchOrchestrator:
         papers = [p for p in papers if p.similarity_score >= self.settings.similarity_threshold] or papers
         papers.sort(key=lambda p: p.final_score, reverse=True)
         return papers
+
+    def search_via_tavily(self, query: str, max_results: Optional[int] = None, rerank: bool = True) -> List[Paper]:
+        from arxiv_seeker.tavily_client import TavilyClient
+
+        max_results = max_results or self.settings.default_max_results
+        cache_key = f"tavily::{query}"
+
+        # Проверяем кэш (если кэш поддерживает этот ключ)
+        cached = self.cache.get(cache_key, max_results, "tavily")
+        if cached is not None:
+            return cached
+
+        tavily = TavilyClient()
+        ids = tavily.search_arxiv_ids(query, max_results=max_results * 2)  # oversample для реранкера
+        papers = self.client.get_by_ids(ids)
+
+        if rerank and papers:
+            papers = self._rerank(query, papers)
+        else:
+            for p in papers:
+                p.final_score = p.similarity_score
+
+        # Ограничиваем итоговое количество
+        papers = papers[:max_results]
+        self.cache.set(cache_key, max_results, "tavily", papers)
+        return papers

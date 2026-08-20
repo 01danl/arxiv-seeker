@@ -30,13 +30,10 @@ class AgentSearchOrchestrator:
         all_papers = []
         seen_ids = set()
         for query in intent.arxiv_queries:
-            papers = self.search_orchestrator.search(
-                query,
-                max_results=self.config.get("candidates_per_query", 8),
-                sort_by="relevance",
-                use_cache=True,
-                rerank=True,
-            )
+            if self.search_orchestrator.settings.search_backend == "tavily":
+                 papers = self.search_orchestrator.search_via_tavily(query, max_results=self.config.get("candidates_per_query", 8))
+            else:
+                papers = self.search_orchestrator.search(query, max_results=self.config.get("candidates_per_query", 8), sort_by="relevance", use_cache=True, rerank=True)
             for p in papers:
                 if p.arxiv_id not in seen_ids:
                     seen_ids.add(p.arxiv_id)

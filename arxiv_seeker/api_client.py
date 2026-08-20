@@ -124,3 +124,26 @@ class ArxivClient:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
         return filename
+
+    def get_by_ids(self, arxiv_ids: List[str]) -> List[Paper]:
+        """Fetch metadata for multiple papers by ID in a single API call, preserving input order."""
+        if not arxiv_ids:
+            return []
+        self._throttle()
+        search = arxiv.Search(id_list=arxiv_ids)
+        results_by_id = {}
+        for result in self._client.results(search):
+            short_id = result.get_short_id().split("v")[0]
+            results_by_id[short_id] = Paper(
+                arxiv_id=short_id,
+                title=result.title.strip().replace("\n", " "),
+                abstract=result.summary.strip().replace("\n", " "),
+                authors=[a.name for a in result.authors],
+                published=result.published,
+                updated=result.updated,
+                categories=result.categories,
+                pdf_url=result.pdf_url,
+                entry_url=result.entry_id,
+            )
+        # preserve Tavily's relevance order; skip IDs arXiv couldn't resolve (e.g. withdrawn papers)
+        return [results_by_id[i] for i in arxiv_ids if i in results_by_id]
