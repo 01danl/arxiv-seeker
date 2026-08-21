@@ -20,6 +20,7 @@ class AgentSearchOrchestrator:
     def run(self, user_message: str) -> AgentSearchResult:
         # Шаг 1: понимание запроса
         intent = self.intent_agent.parse(user_message)
+        logger.info("INTENT: domain=%r explicit=%s queries=%s", intent.domain, intent.is_explicit_request, intent.arxiv_queries)
         if intent.clarifying_question:
             return AgentSearchResult(
                 reply_text=f"Уточните, пожалуйста: {intent.clarifying_question}",

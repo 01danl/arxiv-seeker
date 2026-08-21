@@ -32,9 +32,17 @@ class RelevanceJudge:
         try:
             cleaned = raw.strip().strip("```json").strip("```").strip()
             data = json.loads(cleaned)
-            # Ожидаем список объектов с ключами arxiv_id, keep, reason, fit_for_level
+
+            if isinstance(data, dict):
+                # response_format=json_object requires a top-level object; the model
+                # wraps the array under a key ("papers", "results", etc.) — extract it.
+                data = data.get("papers") or next((v for v in data.values() if isinstance(v, list)), [])
+
             judged = []
             for item in data:
+                if not isinstance(item, dict):
+                    logger.warning("Skipping malformed judge item: %r", item)
+                    continue
                 judged.append(JudgedPaper(
                     arxiv_id=item["arxiv_id"],
                     keep=item.get("keep", False),
@@ -43,9 +51,5 @@ class RelevanceJudge:
                 ))
             return judged
         except Exception as e:
-            logger.warning("Judge parsing failed (%s), keeping all candidates", e)
-            # Фолбэк: оставляем все кандидаты
-            return [
-                JudgedPaper(arxiv_id=p.arxiv_id, keep=True, reason="", fit_for_level=True)
-                for p in candidate_papers
-            ]
+            logger.warning("Judge parsing failed (%s), raw=%r", e, raw[:500])
+            return [JudgedPaper(arxiv_id=p.arxiv_id, keep=True, reason="", fit_for_level=True) for p in candidate_papers]

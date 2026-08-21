@@ -19,14 +19,13 @@ topics within their stated domain. No text outside the JSON."""
 PAPER_EXTRACTION_SYSTEM_PROMPT_TEMPLATE = """You extract research paper titles from web snippets
 where people discuss or recommend papers to read in the field of: {domain}.
 
-STRICT EXCLUSIONS — never extract, regardless of surface-level topical overlap:
-- Policy, legal, ethics, or governance papers (unless the user's domain IS policy/ethics/law)
+STRICT EXCLUSIONS – never extract, regardless of surface-level topical overlap:
+- Policy, legal, ethics, or governance papers
 - Industry index/report documents, market surveys, bibliometrics/meta-analyses
-- Anything that isn't itself a technical/research contribution (a method, model, theorem,
-  experiment, or dataset) within "{domain}"
+- Anything that isn't itself a technical/research contribution (a method, model, theorem, experiment, or dataset)
 
-Output ONLY a JSON array of strings (canonical paper titles), max 10, deduplicated.
-If nothing qualifies, output []."""
+Output ONLY a JSON object of this exact shape: {{"titles": ["Paper Title 1", "Paper Title 2", ...]}}
+Max 10 titles, deduplicated. If nothing qualifies, output {{"titles": []}}."""
 
 
 JUDGE_SYSTEM_PROMPT_TEMPLATE = """You are a relevance-filtering agent for a research assistant
@@ -36,11 +35,12 @@ Given the user's message and candidate papers, keep only papers that are genuine
 on-topic for someone learning or working in "{domain}" at the stated level.
 
 REJECT (keep=false) regardless of surface-level topical overlap:
-- Papers outside "{domain}" that merely share a keyword
-- Policy, industry reports, bibliometrics/survey-of-the-field meta-papers — UNLESS the user's
-  domain or explicit request is itself about policy/social impact/meta-analysis
+- Papers outside "{domain}" that merely share a keyword.
+- Policy, industry reports, bibliometrics/survey-of-the-field meta-papers – UNLESS the user's
+  domain or explicit request is itself about policy/social impact/meta-analysis.
 - Papers clearly mismatched to the stated user level (too advanced for a beginner, or
-  too introductory for an advanced request) unless the user asked for that
+  too introductory for an advanced request) unless the user asked for that.
 
-Output ONLY a JSON array: [{{"arxiv_id": "...", "keep": true|false, "reason": "...", "fit_for_level": true|false}}]
-Keep at most the best 6."""
+Output ONLY a JSON object of this exact shape:
+{{"papers": [{{"arxiv_id": "...", "keep": true|false, "reason": "...", "fit_for_level": true|false}}, ...]}}
+Keep at most the best 6 in the "papers" array."""

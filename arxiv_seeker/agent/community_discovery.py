@@ -28,8 +28,20 @@ class CommunityDiscoveryAgent:
 
         try:
             cleaned = raw.strip().strip("```json").strip("```").strip()
-            titles = json.loads(cleaned)
-            return [t for t in titles if isinstance(t, str)][:10]
+            data = json.loads(cleaned)
+            if isinstance(data, dict):
+                if "titles" in data:
+                    data = data["titles"]
+                else:
+                    # Берём первое значение-список
+                    for v in data.values():
+                        if isinstance(v, list):
+                            data = v
+                            break
+                    else:
+                        raise ValueError("No list found in response")
+            titles = [t for t in data if isinstance(t, str)][:10]
+            return titles
         except Exception as e:
             logger.warning("Paper title extraction failed (%s)", e)
             return []
