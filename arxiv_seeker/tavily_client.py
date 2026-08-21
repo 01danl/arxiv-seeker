@@ -49,3 +49,26 @@ class TavilyClient:
                     ids.append(arxiv_id)
         logger.info("Tavily found %d arXiv IDs for query=%r", len(ids), query)
         return ids
+
+    def search_general(self, query: str, max_results: int = 8) -> List[dict]:
+        resp = requests.post(
+            "https://api.tavily.com/search",
+            json={
+                "api_key": self.api_key,
+                "query": query,
+                "search_depth": "advanced",
+                "max_results": max_results,
+                "include_domains": [
+                    "reddit.com", "news.ycombinator.com", "github.com",
+                    "dev.to", "habr.com", "towardsdatascience.com",
+                    "sebastianraschka.com", "lilianweng.github.io",
+                ],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return [
+            {"title": r.get("title", ""), "url": r.get("url", ""), "content": r.get("content", "")[:500]}
+            for r in data.get("results", [])
+        ]

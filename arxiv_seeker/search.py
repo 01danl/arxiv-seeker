@@ -81,7 +81,7 @@ class SearchOrchestrator:
             citation_boost = 1.0
             if paper.citation_count:
                 citation_boost = 1.0 + min(math.log1p(paper.citation_count) / 20, 0.25)
-            paper.final_score = float(sim * (0.85 + 0.15 * recency_factor) * citation_boost)
+            paper.final_score = paper.similarity_score
 
         papers = [p for p in papers if p.similarity_score >= self.settings.similarity_threshold] or papers
         papers.sort(key=lambda p: p.final_score, reverse=True)
@@ -112,3 +112,25 @@ class SearchOrchestrator:
         papers = papers[:max_results]
         self.cache.set(cache_key, max_results, "tavily", papers)
         return papers
+
+    def resolve_title(self, title: str, min_similarity: float = 0.45) -> Optional[Paper]:
+        from arxiv_seeker.tavily_client import TavilyClient
+        from arxiv_seeker.rag.embedding import Embedder
+
+        ids = TavilyClient().search_arxiv_ids(title, max_results=3)
+        candidates = self.client.get_by_ids(ids)
+        if not candidates:
+            return None
+
+        embedder = Embedder()
+        title_emb = embedder.embed_query(title)
+        best, best_score = None, -1.0
+        for p in candidates:
+            sim = float(embedder.embed([p.title])[0] @ title_emb)
+            if sim > best_score:
+                best, best_score = p, sim
+
+        if best_score < min_similarity:
+            logger.info("Rejected resolve_title(%r): best match %.2f below threshold", title, best_score)
+            return None
+        return best

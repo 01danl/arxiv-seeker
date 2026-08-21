@@ -1,14 +1,14 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-
 @dataclass
 class SearchIntent:
-    topics: List[str]                 # исправленные, канонические темы: ["backpropagation", "gradient descent"]
-    arxiv_queries: List[str]          # готовые к отправке в SearchOrchestrator строки
-    categories: List[str]             # ["cs.LG", "cs.NE"] — агент сам подбирает, если юзер не указал
-    user_level: str                   # "beginner" | "intermediate" | "advanced"
-    is_explicit_request: bool         # True если юзер сам назвал конкретную тему, а не просит "что почитать"
-    clarifying_question: Optional[str] = None  # если запрос совсем непонятен
+    topics: List[str]
+    arxiv_queries: List[str]
+    categories: List[str]
+    domain: str                        # NEW — short field label, inferred, not hardcoded
+    user_level: str
+    is_explicit_request: bool
+    clarifying_question: Optional[str] = None
 
 @dataclass
 class JudgedPaper:

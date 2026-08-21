@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict
 from arxiv_seeker.llm import LLMClient
 from arxiv_seeker.agent.schemas import JudgedPaper
-from arxiv_seeker.agent.prompts import JUDGE_SYSTEM_PROMPT
+from arxiv_seeker.agent.prompts import JUDGE_SYSTEM_PROMPT_TEMPLATE
 from arxiv_seeker.api_client import Paper
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ class RelevanceJudge:
     def __init__(self, llm: LLMClient | None = None):
         self.llm = llm or LLMClient()
 
-    def judge(self, user_query: str, candidate_papers: List[Paper]) -> List[JudgedPaper]:
+    def judge(self, user_query: str, candidate_papers: List[Paper], domain: str) -> List[JudgedPaper]:
         if not candidate_papers:
             return []
 
@@ -27,7 +27,8 @@ class RelevanceJudge:
 
         user_prompt = f"User message: {user_query}\n\nCandidates:\n{json.dumps(candidate_list, ensure_ascii=False, indent=2)}"
 
-        raw = self.llm.chat(JUDGE_SYSTEM_PROMPT, user_prompt, json_mode=True)
+        system_prompt = JUDGE_SYSTEM_PROMPT_TEMPLATE.format(domain=domain)
+        raw = self.llm.chat(system_prompt, user_prompt, json_mode=True)
         try:
             cleaned = raw.strip().strip("```json").strip("```").strip()
             data = json.loads(cleaned)
