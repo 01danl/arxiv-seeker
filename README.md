@@ -20,7 +20,7 @@ arxiv-seeker chat --paper-id 1706.03762 "What is the main contribution?"
 ## Install
 
 ```bash
-git clone <https://github.com/01danl/arxiv-seeker.git>
+git clone https://github.com/01danl/arxiv-seeker.git
 cd arxiv-seeker
 python -m venv venv && source venv/bin/activate
 pip install -e ".[dev,rag,web]"
