@@ -117,7 +117,12 @@ class SearchOrchestrator:
         from arxiv_seeker.tavily_client import TavilyClient
         from arxiv_seeker.rag.embedding import Embedder
 
-        ids = TavilyClient().search_arxiv_ids(title, max_results=3)
+        try:
+            ids = TavilyClient().search_arxiv_ids(title, max_results=3)
+        except Exception as exc:
+            logger.warning("resolve_title: Tavily search failed for %r: %s", title, exc)
+            return None
+
         candidates = self.client.get_by_ids(ids)
         if not candidates:
             return None

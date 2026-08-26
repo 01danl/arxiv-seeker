@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     # --- Agent search settings ---
     agent_candidates_per_query: int = 8      # сколько статей брать с каждого запроса
     agent_final_top_n: int = 6               # сколько оставить после фильтрации
+    agent_min_papers: int = 2                # если меньше — включаем seed catalog и итерацию
 
     tavily_api_key: Optional[str] = None
     search_backend: Literal["arxiv", "tavily"] = "tavily"  # какой discovery-движок использовать

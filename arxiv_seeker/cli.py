@@ -89,6 +89,7 @@ def ask(message):
         config_overrides={
             "candidates_per_query": settings.agent_candidates_per_query,
             "final_top_n": settings.agent_final_top_n,
+            "min_papers": settings.agent_min_papers,
         }
     )
     user_msg = " ".join(message)

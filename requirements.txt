@@ -1,0 +1,22 @@
+# Core
+arxiv>=2.1.0
+requests>=2.31
+pydantic>=2.6
+pydantic-settings>=2.2
+click>=8.1
+sentence-transformers>=2.6
+faiss-cpu>=1.8
+pymupdf>=1.24
+numpy>=1.26
+
+# LLM backends — install what you need:
+ollama                          # local Ollama (free, runs on your machine)
+openai>=1.30                    # OpenAI / OpenAI-compatible proxies
+anthropic>=0.25                 # Anthropic Claude
+
+# Web UI
+streamlit>=1.35
+
+# Optional API server (not needed for CLI / Streamlit)
+# fastapi>=0.110
+# uvicorn>=0.29

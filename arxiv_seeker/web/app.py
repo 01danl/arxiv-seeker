@@ -1,12 +1,20 @@
 """Streamlit UI for ArxivSeeker: search papers, chat with a selected paper."""
 from __future__ import annotations
 
+import logging
+
 import streamlit as st
 
 from arxiv_seeker.rag.chat import PaperIndexer, RagChat
 from arxiv_seeker.search import SearchOrchestrator
 from arxiv_seeker.agent.orchestrator import AgentSearchOrchestrator
 from arxiv_seeker.config import get_settings
+
+# Show agent diagnostics in the terminal (INTENT, Judge, community discovery, etc.)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 st.set_page_config(page_title="ArxivSeeker", page_icon="🔎", layout="wide")
 
@@ -139,6 +147,7 @@ else:
                     config_overrides={
                         "candidates_per_query": settings.agent_candidates_per_query,
                         "final_top_n": settings.agent_final_top_n,
+                        "min_papers": settings.agent_min_papers,
                     }
                 )
                 result = orchestrator.run(prompt)

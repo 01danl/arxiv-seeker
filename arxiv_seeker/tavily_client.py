@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import List
+from typing import Dict, List, Optional
 
 import requests
 
@@ -12,6 +12,81 @@ from arxiv_seeker.config import get_settings
 logger = logging.getLogger(__name__)
 
 _ARXIV_ID_PATTERN = re.compile(r"arxiv\.org/(?:abs|pdf)/([0-9]{4}\.[0-9]{4,5}(?:v\d+)?)")
+
+# ---------------------------------------------------------------------------
+# Per-domain community sources for general-web discovery.
+# When the inferred domain doesn't match any key we fall back to a broad
+# set of general-purpose discussion sites.
+# ---------------------------------------------------------------------------
+_DOMAIN_COMMUNITY_SOURCES: Dict[str, List[str]] = {
+    "AI/ML engineering": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "towardsdatascience.com", "sebastianraschka.com",
+        "lilianweng.github.io", "karpathy.github.io", "arxiv.org",
+    ],
+    "biology": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "nature.com", "cell.com", "biologists.com",
+        "pubmed.ncbi.nlm.nih.gov", "biorxiv.org",
+    ],
+    "chemistry": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "nature.com", "pubs.acs.org", "chemistryworld.com",
+        "pubs.rsc.org",
+    ],
+    "physics": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "physicsworld.com", "nature.com", "aps.org",
+    ],
+    "mathematics": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "mathoverflow.net", "math.stackexchange.com",
+    ],
+    "economics": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "economist.com", "nber.org", "aeaweb.org",
+    ],
+    "computer science": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "acm.org", "ieee.org",
+    ],
+    "medicine": [
+        "reddit.com", "news.ycombinator.com",
+        "pubmed.ncbi.nlm.nih.gov", "nejm.org", "thelancet.com",
+        "bmj.com",
+    ],
+    "astrophysics": [
+        "reddit.com", "news.ycombinator.com",
+        "aas.org", "nature.com", "arxiv.org",
+    ],
+    "neuroscience": [
+        "reddit.com", "news.ycombinator.com",
+        "nature.com", "jneurosci.org", "pubmed.ncbi.nlm.nih.gov",
+    ],
+    "quantum computing": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "quantum-journal.org", "arxiv.org",
+    ],
+    "computational biology": [
+        "reddit.com", "news.ycombinator.com", "github.com",
+        "nature.com", "pubmed.ncbi.nlm.nih.gov", "biorxiv.org",
+    ],
+}
+
+# Broad fallback for any domain we don't have a curated list for.
+_FALLBACK_COMMUNITY_SOURCES: List[str] = [
+    "reddit.com", "news.ycombinator.com", "github.com",
+    "stackexchange.com", "wikipedia.org",
+]
+
+
+def _pick_community_sources(domain: str) -> List[str]:
+    """Return the best-matching community-domain list for *domain*."""
+    domain_lower = domain.lower()
+    for key, sources in _DOMAIN_COMMUNITY_SOURCES.items():
+        if key.lower() in domain_lower or domain_lower in key.lower():
+            return sources
+    return _FALLBACK_COMMUNITY_SOURCES
 
 
 class TavilyClient:
@@ -50,7 +125,19 @@ class TavilyClient:
         logger.info("Tavily found %d arXiv IDs for query=%r", len(ids), query)
         return ids
 
-    def search_general(self, query: str, max_results: int = 8) -> List[dict]:
+    def search_general(
+        self,
+        query: str,
+        max_results: int = 8,
+        domain: Optional[str] = None,
+    ) -> List[dict]:
+        """General web search for community recommendations.
+
+        If *domain* is provided we scope the search to relevant community
+        sites for that field; otherwise a broad fallback set is used.
+        """
+        include_domains = _pick_community_sources(domain) if domain else _FALLBACK_COMMUNITY_SOURCES
+
         resp = requests.post(
             "https://api.tavily.com/search",
             json={
@@ -58,17 +145,17 @@ class TavilyClient:
                 "query": query,
                 "search_depth": "advanced",
                 "max_results": max_results,
-                "include_domains": [
-                    "reddit.com", "news.ycombinator.com", "github.com",
-                    "dev.to", "habr.com", "towardsdatascience.com",
-                    "sebastianraschka.com", "lilianweng.github.io",
-                ],
+                "include_domains": include_domains,
             },
             timeout=30,
         )
         resp.raise_for_status()
         data = resp.json()
         return [
-            {"title": r.get("title", ""), "url": r.get("url", ""), "content": r.get("content", "")[:500]}
+            {
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "content": r.get("content", "")[:500],
+            }
             for r in data.get("results", [])
         ]
