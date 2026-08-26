@@ -41,22 +41,8 @@ class AgentSearchOrchestrator:
                 reasons={},
             )
 
-        # Шаг 2: для неявных/новичковых запросов — ЗАРАНЕЕ подгружаем seed catalog.
-        # Это гарантирует, что даже при слабом judging или плохих поисковых выдачах
-        # пользователь получит проверенные foundational papers.
-        seed_papers: List[Paper] = []
-        if not intent.is_explicit_request:
-            seed_papers = self._seed_catalog_fallback(intent.domain, set())
-            logger.info("Seed catalog preloaded %d papers for domain=%r", len(seed_papers), intent.domain)
-
-        # Шаг 3: собираем кандидатов (community discovery + arXiv/Tavily search)
+        # Шаг 2: собираем кандидатов (community discovery + arXiv/Tavily search)
         all_papers, seen_ids = self._gather_candidates(user_message, intent)
-
-        # Вливаем seed papers в общий пул (они гарантированно качественные)
-        for sp in seed_papers:
-            if sp.arxiv_id not in seen_ids:
-                seen_ids.add(sp.arxiv_id)
-                all_papers.append(sp)
 
         if not all_papers:
             return AgentSearchResult(
@@ -65,21 +51,11 @@ class AgentSearchOrchestrator:
                 reasons={},
             )
 
-        # Шаг 4: оценка релевантности (LLM-джадж)
-        # Отделяем seed papers — они предварительно проверены, их не фильтруем
-        seed_ids = {sp.arxiv_id for sp in seed_papers}
-        non_seed = [p for p in all_papers if p.arxiv_id not in seed_ids]
+        # Шаг 3: оценка релевантности (LLM-джадж) — все кандидаты проходят судью
+        judged = self.judge.judge(user_message, all_papers, domain=intent.domain)
+        kept_papers = self._filter_and_sort(judged, all_papers)
 
-        if non_seed:
-            judged = self.judge.judge(user_message, non_seed, domain=intent.domain)
-            kept_papers = self._filter_and_sort(judged, non_seed)
-        else:
-            kept_papers = []
-
-        # Seed papers всегда включаются (они гарантированно релевантны)
-        kept_papers = seed_papers + kept_papers
-
-        # Шаг 5: если мало — итерация с уточнёнными запросами
+        # Шаг 4: если мало — итерация с уточнёнными запросами
         min_papers = self.config.get("min_papers", 2)
         if len(kept_papers) < min_papers:
             logger.info(
@@ -98,23 +74,23 @@ class AgentSearchOrchestrator:
                         deduped.append(p)
                 kept_papers = deduped
 
+        # Шаг 5: LAST RESORT — если вообще ничего не нашли, пробуем seed catalog
+        if not kept_papers and not intent.is_explicit_request:
+            logger.info("No papers found after all attempts, falling back to seed catalog")
+            seed_papers = self._seed_catalog_fallback(intent.domain, set())
+            if seed_papers:
+                kept_papers = seed_papers[: self.config.get("final_top_n", 6)]
+
         # Шаг 6: ограничиваем финальное количество
         top_n = self.config.get("final_top_n", 6)
         kept_papers = kept_papers[:top_n]
 
         # Шаг 7: формируем ответ
-        reasons_dict: dict = {}
-        # Reasons from the judge (for non-seed papers)
-        if non_seed:
-            reasons_dict.update({
-                j.arxiv_id: j.reason
-                for j in judged
-                if j.arxiv_id in {p.arxiv_id for p in kept_papers}
-            })
-        # Reasons for seed papers
-        for sp in seed_papers:
-            if sp.arxiv_id in {p.arxiv_id for p in kept_papers}:
-                reasons_dict.setdefault(sp.arxiv_id, "Foundational paper — curated recommendation")
+        reasons_dict = {
+            j.arxiv_id: j.reason
+            for j in judged
+            if j.arxiv_id in {p.arxiv_id for p in kept_papers}
+        }
 
         if kept_papers:
             reply = f"Нашёл для вас {len(kept_papers)} подходящих статей по запросу.\n"

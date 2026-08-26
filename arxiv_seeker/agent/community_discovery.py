@@ -22,37 +22,34 @@ class CommunityDiscoveryAgent:
         domain: str,
         max_sources: int = 10,
     ) -> List[str]:
-        # Build a domain-aware search query that targets curated lists and
-        # practitioner recommendations rather than generic definitions.
-        search_query = (
-            f'site:reddit.com OR site:github.com OR site:news.ycombinator.com '
-            f'"{domain}" recommended papers must read foundational'
-        )
-        # Also try a broader query for diversity
-        sources = self.tavily.search_general(
-            search_query, max_results=max_sources, domain=domain,
-        )
-        if len(sources) < 4:
-            # Supplementary broader search — "best papers", "reading list", etc.
-            broad_query = (
-                f'"{domain}" best papers reading list for beginners '
-                f'must-read foundational important'
+        # Build search queries that target the USER'S ACTUAL QUESTION,
+        # not the domain name. Search for recommendation lists and discussions.
+        queries = [
+            f'"{user_query}" recommended papers to read',
+            f'"{user_query}" important papers landmark',
+            f'"{user_query}" best papers reading list',
+        ]
+
+        all_sources = []
+        seen_urls = set()
+        for q in queries[:2]:  # use first 2 queries to avoid rate limits
+            sources = self.tavily.search_general(
+                q, max_results=max_sources // 2, domain=domain,
             )
-            extra = self.tavily.search_general(
-                broad_query, max_results=max_sources, domain=domain,
-            )
-            seen_urls = {s["url"] for s in sources}
-            for s in extra:
+            for s in sources:
                 if s["url"] not in seen_urls:
                     seen_urls.add(s["url"])
-                    sources.append(s)
+                    all_sources.append(s)
 
-        if not sources:
-            logger.warning("Community discovery returned no sources for domain=%r", domain)
+        if not all_sources:
+            logger.warning(
+                "Community discovery returned no sources for query=%r domain=%r",
+                user_query, domain,
+            )
             return []
 
         snippets = "\n\n".join(
-            f"[{s['title']}]({s['url']})\n{s['content']}" for s in sources
+            f"[{s['title']}]({s['url']})\n{s['content']}" for s in all_sources
         )
         system_prompt = PAPER_EXTRACTION_SYSTEM_PROMPT_TEMPLATE.format(domain=domain)
         raw = self.llm.chat(system_prompt, snippets, json_mode=True)
