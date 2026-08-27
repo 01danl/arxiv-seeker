@@ -25,7 +25,7 @@ ArxivSeeker is a **two-layer** system:
 
 2. **RAG chat** — pick any paper, index it once (download → parse → chunk → embed),
    then ask questions. Answers cite the exact sections of the paper they came from,
-   and the model refuses to guess when the text doesn't cover your question.
+   and the model refuses to guess when the text doesn't cover your question
 
 ```
 ┌───────────────────────────────────────────────────────┐
