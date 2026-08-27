@@ -106,5 +106,21 @@ def ask(message):
         if reason:
             click.echo(f"   Почему: {reason}")
 
+
+@cli.command("serve")
+@click.option("--host", default="127.0.0.1", help="Bind host")
+@click.option("--port", default=8000, help="Bind port")
+@click.option("--reload", "reload", is_flag=True, help="Enable auto-reload (dev)")
+def serve(host, port, reload):
+    """Run the FastAPI backend + web UI.
+
+    arxiv-seeker serve --reload
+    """
+    import uvicorn
+
+    click.echo(f"🔥 ArxivSeeker UI: http://{host}:{port}")
+    uvicorn.run("arxiv_seeker.api.app:app", host=host, port=port, reload=reload)
+
+
 if __name__ == "__main__":
     cli()

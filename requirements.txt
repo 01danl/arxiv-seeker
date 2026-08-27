@@ -14,9 +14,9 @@ ollama                          # local Ollama (free, runs on your machine)
 openai>=1.30                    # OpenAI / OpenAI-compatible proxies
 anthropic>=0.25                 # Anthropic Claude
 
-# Web UI
-streamlit>=1.35
+# Web UI (new FastAPI frontend — primary)
+fastapi>=0.110
+uvicorn>=0.29
 
-# Optional API server (not needed for CLI / Streamlit)
-# fastapi>=0.110
-# uvicorn>=0.29
+# Legacy Streamlit UI (optional, still works)
+streamlit>=1.35

@@ -1,0 +1,1 @@
+"""FastAPI backend + static web UI for ArxivSeeker."""

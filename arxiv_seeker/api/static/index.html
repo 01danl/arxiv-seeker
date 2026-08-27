@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArxivSeeker — AI Research Assistant</title>
+  <meta name="description" content="Find, rank and chat with arXiv papers. Ask in any language." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c7cf9'/%3E%3Cstop offset='1' stop-color='%23c084fc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M14 7a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm5 12.5l6 6' stroke='white' stroke-width='3' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============ Top bar ============ -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+            <defs>
+              <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#7c7cf9"/>
+                <stop offset="1" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="8" fill="url(#lg1)"/>
+            <path d="M14 7a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm5 12.5l6 6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="brand-name">ArxivSeeker</span>
+        <span class="brand-badge">beta</span>
+      </div>
+      <nav class="topnav">
+        <a class="nav-link" href="https://github.com/01danl/arxiv-seeker" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/>
+          </svg>
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============ Main chat ============ -->
+  <main class="chat-scroll" id="chatScroll">
+    <div class="chat-inner" id="chatInner">
+
+      <!-- Empty state (rendered by JS) -->
+      <section class="empty-state" id="emptyState">
+        <div class="hero-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="44" height="44" fill="none">
+            <defs>
+              <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#7c7cf9"/>
+                <stop offset="1" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="9" fill="url(#lg2)"/>
+            <path d="M14 7a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm5 12.5l6 6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1 class="hero-title">What would you like to learn?</h1>
+        <p class="hero-sub">
+          Ask about any research topic — in any language. I'll find the right
+          arXiv papers, and you can chat with any of them.
+        </p>
+        <div class="examples" id="examples">
+          <button class="example-chip" data-q="I want to become an AI engineer. Which papers should I read?">
+            <span class="chip-icon">🤖</span> Foundational AI-engineering papers
+          </button>
+          <button class="example-chip" data-q="I'm learning gradient descent. Give me the important papers to understand it deeply.">
+            <span class="chip-icon">📉</span> Key papers on gradient descent
+          </button>
+          <button class="example-chip" data-q="I'm a biology student starting with CRISPR. What papers must I read?">
+            <span class="chip-icon">🧬</span> Must-read CRISPR papers
+          </button>
+          <button class="example-chip" data-q="Хочу понять diffusion models, какие статьи почитать?">
+            <span class="chip-icon">🎨</span> Diffusion models (по-русски)
+          </button>
+        </div>
+      </section>
+
+      <!-- Messages get injected here -->
+    </div>
+  </main>
+
+  <!-- ============ Composer ============ -->
+  <footer class="composer-wrap">
+    <div class="composer" id="composer">
+      <textarea
+        id="input"
+        rows="1"
+        placeholder="Ask about any research topic…"
+        autofocus
+      ></textarea>
+      <button id="sendBtn" class="send-btn" title="Send (Enter)" aria-label="Send">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>
+        </svg>
+      </button>
+    </div>
+    <p class="disclaimer">
+      ArxivSeeker can make mistakes — check important papers yourself.
+      <span id="backendBadge" class="backend-badge"></span>
+    </p>
+  </footer>
+
+  <!-- ============ RAG side panel ============ -->
+  <div class="rag-overlay" id="ragOverlay" hidden></div>
+  <aside class="rag-panel" id="ragPanel" aria-hidden="true">
+    <header class="rag-header">
+      <div class="rag-header-info">
+        <span class="rag-header-label">Chat with paper</span>
+        <h3 class="rag-paper-title" id="ragTitle">—</h3>
+      </div>
+      <button class="icon-btn" id="ragClose" title="Close" aria-label="Close panel">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="rag-messages" id="ragMessages">
+      <!-- RAG empty state -->
+      <div class="rag-empty" id="ragEmpty">
+        <p>Ask anything about this paper — answers are grounded in its actual text.</p>
+      </div>
+    </div>
+
+    <footer class="rag-composer-wrap">
+      <div class="rag-status" id="ragStatus" hidden></div>
+      <div class="composer rag-composer">
+        <textarea id="ragInput" rows="1" placeholder="Ask about this paper…"></textarea>
+        <button id="ragSendBtn" class="send-btn" title="Send (Enter)" aria-label="Send">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>
+          </svg>
+        </button>
+      </div>
+    </footer>
+  </aside>
+
+  <!-- ============ Toast ============ -->
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
